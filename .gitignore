@@ -1,0 +1,16 @@
+# OS / editor
+.DS_Store
+Thumbs.db
+*.swp
+.vscode/
+.idea/
+
+# Node / build artifacts (timeline is buildless, but guard anyway)
+node_modules/
+dist/
+*.log
+
+# Private engine — never publish the report-generation systems
+engine/
+private/
+*.private.md

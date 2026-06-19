@@ -1,0 +1,1318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>AI Intelligence Timeline — BHIL Archive</title>
+<meta name="description" content="Interactive timeline of the 2026 AI intelligence record." />
+<style>
+  html, body { margin:0; padding:0; background:#0a0a0f; color:#e8e8f0; }
+  #root { min-height:100vh; }
+  .boot { font-family: ui-monospace, monospace; padding:48px; color:#888; }
+</style>
+<script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js" crossorigin></script>
+</head>
+<body>
+<div id="root"><div class="boot">Loading timeline…</div></div>
+<script type="text/babel" data-type="module">
+const { useState, useMemo, useEffect, useRef, useCallback } = React;
+
+
+// 
+// DATA MODEL — Scales to 10+ days
+// 
+
+const ENTITIES = {
+  "Anthropic": { color: "#D4A574", short: "ANTH", type: "company" },
+  "OpenAI": { color: "#74D4A5", short: "OAI", type: "company" },
+  "Google DeepMind": { color: "#74A5D4", short: "GOOG", type: "company" },
+  "xAI": { color: "#D47474", short: "XAI", type: "company" },
+  "MiniMax": { color: "#C4D474", short: "MNMX", type: "company" },
+  "Zhipu AI": { color: "#D474C4", short: "ZHPU", type: "company" },
+  "DeepSeek": { color: "#74D4D4", short: "DSPK", type: "company" },
+  "Alibaba": { color: "#FF9F43", short: "BABA", type: "company" },
+  "ByteDance": { color: "#EE5A24", short: "BYTE", type: "company" },
+  "Kuaishou": { color: "#F8C291", short: "KUAI", type: "company" },
+  "Moonshot AI": { color: "#B8E994", short: "MOON", type: "company" },
+  "Pentagon / DoD": { color: "#C4B5FD", short: "DOD", type: "gov" },
+  "Palantir": { color: "#A78BFA", short: "PLTR", type: "company" },
+  "U.S. Government": { color: "#818CF8", short: "USG", type: "gov" },
+  "EU": { color: "#93C5FD", short: "EU", type: "gov" },
+  "Munich Security Conf.": { color: "#6EE7B7", short: "MSC", type: "org" },
+  "Canada": { color: "#FCA5A5", short: "CAN", type: "gov" },
+  "Germany": { color: "#FCD34D", short: "DEU", type: "gov" },
+  "India": { color: "#FDBA74", short: "IND", type: "gov" },
+  "China (State)": { color: "#F87171", short: "CHN", type: "gov" },
+  "S&P 500 / Markets": { color: "#A3E635", short: "MKT", type: "market" },
+  "JPMorgan": { color: "#38BDF8", short: "JPM", type: "company" },
+  "Goldman Sachs": { color: "#2DD4BF", short: "GS", type: "company" },
+  "NVIDIA": { color: "#84CC16", short: "NVDA", type: "company" },
+  "Huawei": { color: "#FB923C", short: "HWAI", type: "company" },
+  "Iran/NK/Russia": { color: "#EF4444", short: "APT", type: "threat" },
+  "Thoma Bravo": { color: "#A78BFA", short: "THBR", type: "company" },
+  "Cerebras": { color: "#67E8F9", short: "CRBS", type: "company" },
+};
+
+const CATEGORIES = {
+  "Funding & Valuation": "#D4A574",
+  "Military & Defense": "#C4B5FD",
+  "Model Release": "#74A5D4",
+  "Geopolitics & Governance": "#6EE7B7",
+  "Market Impact": "#A3E635",
+  "Safety & Ethics": "#D47474",
+  "Talent & M&A": "#74D4A5",
+  "Cybersecurity": "#EF4444",
+  "Infrastructure": "#38BDF8",
+};
+
+// -- ENHANCEMENT 1: NARRATIVE THREADS --
+// Story arcs that chain events across days
+const NARRATIVE_THREADS = [
+  {
+    id: "anth-pentagon",
+    label: "Anthropic Ã— Pentagon",
+    color: "#C4B5FD",
+    icon: "⚔",
+    eventIds: ["14-2", "15-1"],
+    summary: "From first confirmed combat AI use →’ contract termination threat in 48 hours. Binary outcome: Anthropic loosens guardrails or loses classified-network monopoly.",
+    momentum: "escalating",
+  },
+  {
+    id: "china-offensive",
+    label: "China AI Blitz",
+    color: "#F87171",
+    icon: "ðŸ‰",
+    eventIds: ["14-4", "14-5", "15-4", "16-2"],
+    summary: "Coordinated model wave proves export controls failing. DeepSeek V4 imminent — previous launch erased $593B from NVIDIA. Gap narrowing to months per Hassabis.",
+    momentum: "accelerating",
+  },
+  {
+    id: "market-doom",
+    label: "AI Doom Loop",
+    color: "#A3E635",
+    icon: "ðŸ“‰",
+    eventIds: ["14-6", "15-2", "15-6"],
+    summary: "Self-reinforcing spiral: AI disrupts incumbents AND capex may never pay off. $2T erased from software. New credit derivatives emerging. Worst sentiment in 30 years.",
+    momentum: "accelerating",
+  },
+  {
+    id: "safety-crisis",
+    label: "Safety vs. Scale",
+    color: "#D47474",
+    icon: "ðŸ›¡",
+    eventIds: ["14-2", "15-1", "15-3"],
+    summary: "xAI dissolves safety team entirely. Pentagon demands 'all lawful purposes.' Anthropic holding two red lines. The safety-first thesis faces its existential test.",
+    momentum: "escalating",
+  },
+  {
+    id: "sovereign-ai",
+    label: "Sovereign AI Blocs",
+    color: "#6EE7B7",
+    icon: "ðŸŒ",
+    eventIds: ["14-8", "15-5", "15-8", "16-1"],
+    summary: "Technology bifurcation crystallizing: Trusted Tech Alliance (15 cos, zero Chinese) + Canada-Germany axis + India Global South summit. Procurement frameworks hardening.",
+    momentum: "building",
+  },
+];
+
+// -- ENHANCEMENT 2: PRECOGNITION SIGNALS --
+// Forward-looking predictions with probability
+const PRECOGNITION_SIGNALS = [
+  {
+    id: "pre-1",
+    title: "DeepSeek V4 Launch",
+    eta: "~Feb 17",
+    hoursOut: 24,
+    probability: 0.85,
+    impact: "critical",
+    description: "Engram memory architecture. If frontier-competitive on Huawei: validates export-control failure thesis.",
+    triggerEntities: ["DeepSeek", "NVIDIA", "Huawei"],
+    cascadeRisk: "NVIDIA -5% to -15% single session if performance matches frontier Western models",
+    threadId: "china-offensive",
+  },
+  {
+    id: "pre-2",
+    title: "Anthropic-Pentagon Resolution",
+    eta: "~Feb 18–22",
+    hoursOut: 72,
+    probability: 0.7,
+    impact: "critical",
+    description: "Binary: Anthropic loosens guardrails or loses $200M contract + classified monopoly.",
+    triggerEntities: ["Anthropic", "Pentagon / DoD"],
+    cascadeRisk: "IPO valuation delta of $50-80B depending on outcome",
+    threadId: "anth-pentagon",
+  },
+  {
+    id: "pre-3",
+    title: "India AI Compendium Release",
+    eta: "Feb 17",
+    hoursOut: 24,
+    probability: 0.95,
+    impact: "high",
+    description: "First Global South governance framework. 50+ nations. May diverge from both US deregulation and EU prescriptive models.",
+    triggerEntities: ["India"],
+    cascadeRisk: "Sets procurement norms for 1.4B-person market + allied Global South nations",
+    threadId: "sovereign-ai",
+  },
+  {
+    id: "pre-4",
+    title: "xAI/SpaceX IPO Filing",
+    eta: "Q1–Q2 2026",
+    hoursOut: 720,
+    probability: 0.55,
+    impact: "high",
+    description: "No safety team + EU investigation + deepfake scandal = material disclosure risk at $250B+ valuation.",
+    triggerEntities: ["xAI", "EU"],
+    cascadeRisk: "Regulatory scrutiny could delay or reprice; ESG exclusion from major funds",
+    threadId: "safety-crisis",
+  },
+  {
+    id: "pre-5",
+    title: "Software Sector Capitulation",
+    eta: "~Feb 20–28",
+    hoursOut: 168,
+    probability: 0.6,
+    impact: "critical",
+    description: "JPMorgan: -34% drawdown is worst in 30 years. Thoma Bravo seeing 'bargains.' Potential PE wave if panic overshoots.",
+    triggerEntities: ["S&P 500 / Markets", "JPMorgan", "Thoma Bravo"],
+    cascadeRisk: "PE dry powder deployment into distressed SaaS; multiple compression below 5x revenue",
+    threadId: "market-doom",
+  },
+];
+
+const EVENTS = [
+  {
+    id: "14-1", date: "2026-02-14", eventDate: "Feb 12–13",
+    title: "Anthropic closes $30B Series G at $380B valuation",
+    description: "Led by GIC and Coatue. Revenue at $14B run rate (10x YoY). Chris Liddell (ex-Microsoft CFO) joins board. Wilson Sonsini engaged for IPO prep. 8 of Fortune 10 are Claude customers.",
+    entities: ["Anthropic"], category: "Funding & Valuation", impact: "critical", briefingDate: "Feb 14",
+  },
+  {
+    id: "14-2", date: "2026-02-14", eventDate: "Feb 13–14",
+    title: "Pentagon used Claude in live Maduro capture operation",
+    description: "First confirmed use of commercial AI in classified combat ops. Deployed via Palantir partnership. $200M contract now under review. Pentagon 'reevaluating' relationship.",
+    entities: ["Anthropic", "Pentagon / DoD", "Palantir"], category: "Military & Defense", impact: "critical", briefingDate: "Feb 14",
+  },
+  {
+    id: "14-3", date: "2026-02-14", eventDate: "Feb 13",
+    title: "Gemini 3 Deep Think solves 18 unsolved research problems",
+    description: "84.6% on ARC-AGI-2 (verified). Legendary Grandmaster on Codeforces (3,455 Elo). Aletheia agent wrote a peer-quality research paper autonomously. Leads Claude Opus 4.6 by 15.8pp.",
+    entities: ["Google DeepMind"], category: "Model Release", impact: "critical", briefingDate: "Feb 14",
+  },
+  {
+    id: "14-4", date: "2026-02-14", eventDate: "Feb 12",
+    title: "MiniMax M2.5: near-SOTA at 1/20th Claude's cost",
+    description: "230B MoE model. 80.2% SWE-Bench Verified matching Claude Opus 4.6. $0.30/M input tokens. MIT license on Hugging Face. 100 tok/s for Lightning variant.",
+    entities: ["MiniMax"], category: "Model Release", impact: "high", briefingDate: "Feb 14",
+  },
+  {
+    id: "14-5", date: "2026-02-14", eventDate: "Feb 10–14",
+    title: "China Lunar New Year AI offensive: 5 major models in 72 hrs",
+    description: "Alibaba RynnBrain (robotics), ByteDance Seedance 2.0 (video), Kuaishou Kling 3.0 (video+audio), Zhipu GLM-5 (744B, trained entirely on Huawei Ascend — zero NVIDIA). Hassabis confirms gap narrowing to months.",
+    entities: ["Alibaba", "ByteDance", "Kuaishou", "Zhipu AI", "Huawei"], category: "Model Release", impact: "critical", briefingDate: "Feb 14",
+  },
+  {
+    id: "14-6", date: "2026-02-14", eventDate: "Feb 13",
+    title: "AI-driven stock selloff enters week 2; worst S&P decline since Nov",
+    description: "S&P 500 down 1.4% for week. $285B software rout from Claude Cowork plugins continues. Thomson Reuters -20%, RELX -14%. Jefferies: software sentiment 'the worst ever.'",
+    entities: ["Anthropic", "S&P 500 / Markets"], category: "Market Impact", impact: "high", briefingDate: "Feb 14",
+  },
+  {
+    id: "14-7", date: "2026-02-14", eventDate: "Feb 13",
+    title: "OpenAI retires GPT-4o; 800M users forced to GPT-5.x",
+    description: "GPT-4o, GPT-4.1, o4-mini all retired from ChatGPT. 20K-signature petition ignored. GPT-5.3-Codex-Spark on Cerebras delivers 1,000+ tok/s. Enterprise GPT-4o access until April 3.",
+    entities: ["OpenAI", "Cerebras"], category: "Model Release", impact: "moderate", briefingDate: "Feb 14",
+  },
+  {
+    id: "14-8", date: "2026-02-14", eventDate: "Feb 14",
+    title: "Canada & Germany launch Sovereign Technology Alliance at Munich",
+    description: "Joint AI declaration signed at Munich Security Conference. Focus on secure compute, AI commercialization, reduced tech dependencies. Partnership with Bengio's LawZero.",
+    entities: ["Canada", "Germany", "Munich Security Conf."], category: "Geopolitics & Governance", impact: "moderate", briefingDate: "Feb 14",
+  },
+  {
+    id: "14-9", date: "2026-02-14", eventDate: "Feb 13–14",
+    title: "State-sponsored actors weaponizing Gemini for cyber ops",
+    description: "Google TIG reports Iran, NK, China, Russia using Gemini for recon, phishing, malware dev. New AI-integrated malware (HONESTCUE) and phishing kits (COINBAIT) detected in the wild.",
+    entities: ["Google DeepMind", "Iran/NK/Russia", "China (State)"], category: "Cybersecurity", impact: "high", briefingDate: "Feb 14",
+  },
+  {
+    id: "15-1", date: "2026-02-15", eventDate: "Feb 15",
+    title: "Pentagon threatens to sever $200M Anthropic contract",
+    description: "Pentagon pushing 'all lawful purposes' standard for military AI. Anthropic maintains two red lines: no mass surveillance, no autonomous weapons. Called most 'ideological' lab. One rival already agreed. Claude is only model on classified networks.",
+    entities: ["Anthropic", "Pentagon / DoD", "U.S. Government"], category: "Military & Defense", impact: "critical", briefingDate: "Feb 15",
+  },
+  {
+    id: "15-2", date: "2026-02-15", eventDate: "Feb 15",
+    title: "Bloomberg identifies AI 'doom loop' hammering markets",
+    description: "Two fears compounding: AI destroys incumbents AND $660B capex never pays off. Software sector lost ~$2T from peak (-34%, JPMorgan). Worst non-recessionary 12-month drawdown in 30 years. Rout spreading to logistics, real estate, insurance.",
+    entities: ["S&P 500 / Markets", "JPMorgan", "Goldman Sachs"], category: "Market Impact", impact: "critical", briefingDate: "Feb 15",
+  },
+  {
+    id: "15-3", date: "2026-02-15", eventDate: "Feb 14",
+    title: "xAI safety team dissolved; Grok pushed without human review",
+    description: "11+ engineers and 2 co-founders departed post SpaceX merger ($1T SpaceX / $250B xAI). No safety team on org chart. Musk views safety as censorship. 1M+ sexualized images generated incl. deepfakes of minors. EU investigation launched.",
+    entities: ["xAI", "EU"], category: "Safety & Ethics", impact: "critical", briefingDate: "Feb 15",
+  },
+  {
+    id: "15-4", date: "2026-02-15", eventDate: "Feb 14–15",
+    title: "China blitz continues: DeepSeek V4 imminent (~Feb 17)",
+    description: "Moonshot Kimi K2.5: 1T params, 100-agent swarm, 1/7th Claude cost. DeepSeek expanded to 1M+ context. V4 expected with 'Engram' memory architecture. OpenAI accuses DeepSeek of model distillation. Original DeepSeek shock wiped $593B from NVIDIA.",
+    entities: ["DeepSeek", "Moonshot AI", "NVIDIA"], category: "Model Release", impact: "critical", briefingDate: "Feb 15",
+  },
+  {
+    id: "15-5", date: "2026-02-15", eventDate: "Feb 13–14",
+    title: "Trusted Tech Alliance launched at Munich: 15 companies, 10 countries, zero Chinese",
+    description: "Founding: Anthropic, AWS, Google Cloud, Microsoft, Nokia, SAP, Ericsson, Saab, Hanwha, NTT, Jio, Rapidus. Five principles covering governance, security, supply chain, open ecosystems, rule of law. De facto technology bifurcation.",
+    entities: ["Anthropic", "Google DeepMind", "Munich Security Conf."], category: "Geopolitics & Governance", impact: "high", briefingDate: "Feb 15",
+  },
+  {
+    id: "15-6", date: "2026-02-15", eventDate: "Feb 14",
+    title: "AI credit derivatives emerge as Big Tech debt concerns grow",
+    description: "New credit derivative instruments tied to single Big Tech names — 'didn't exist a year ago.' 2026 hyperscaler capex: $660B total. Amazon $200B, Alphabet $175-185B, Meta $110B+. Amazon capex 53% above consensus triggered ~10% stock drop.",
+    entities: ["S&P 500 / Markets", "NVIDIA"], category: "Infrastructure", impact: "high", briefingDate: "Feb 15",
+  },
+  {
+    id: "15-7", date: "2026-02-15", eventDate: "Feb 15",
+    title: "OpenClaw creator joins OpenAI; agentic AI talent consolidation",
+    description: "Peter Steinberger (OpenClaw — 196K GitHub stars, #1 trending) acqui-hired by OpenAI. OpenAI's Frontier platform: 'AI coworkers' with identity mgmt. CrewAI at 60% of Fortune 500. Frontier labs hoovering up open-source agent projects.",
+    entities: ["OpenAI"], category: "Talent & M&A", impact: "moderate", briefingDate: "Feb 15",
+  },
+  {
+    id: "15-8", date: "2026-02-15", eventDate: "Feb 16–20",
+    title: "India AI Impact Summit opens Feb 16 — largest Global South AI event",
+    description: "Five-day event, 50+ heads of state, 300+ exhibitors, 30+ countries. 2026 Intl AI Safety Report (chaired by Bengio). India invited China. AI Compendium releasing Feb 17. First major Global South AI governance framework.",
+    entities: ["India"], category: "Geopolitics & Governance", impact: "high", briefingDate: "Feb 15",
+  },
+  {
+    id: "16-1", date: "2026-02-16", eventDate: "Feb 16",
+    title: "India AI Impact Summit — Day 1",
+    description: "Opening sessions underway. Watching for: governance frameworks, compute-sharing agreements, India-specific AI investment incentives. 50+ heads of state in attendance.",
+    entities: ["India"], category: "Geopolitics & Governance", impact: "high", briefingDate: "Feb 16",
+  },
+  {
+    id: "16-2", date: "2026-02-16", eventDate: "~Feb 17",
+    title: "DeepSeek V4 launch watch — T-minus ~24 hours",
+    description: "Market-moving event anticipated. 'Engram' conditional memory + mHC architecture. If frontier-competitive on Huawei Ascend hardware: validates thesis that US export controls failing. Original V3 shock: $593B wiped from NVIDIA.",
+    entities: ["DeepSeek", "NVIDIA", "Huawei"], category: "Model Release", impact: "critical", briefingDate: "Feb 16",
+  },
+];
+
+// 
+// THREAT SPHERE — Canvas orbital visualization
+// 
+
+function ThreatSphere({ events, onSelectEntity }) {
+  const canvasRef = useRef(null);
+  const animRef = useRef(null);
+  const nodesRef = useRef([]);
+  const mouseRef = useRef({ x: 0, y: 0 });
+  const hoveredRef = useRef(null);
+  const [hovered, setHovered] = useState(null);
+
+  const entityData = useMemo(() => {
+    const freq = {};
+    events.forEach(ev => ev.entities.forEach(ent => {
+      if (!freq[ent]) freq[ent] = { name: ent, count: 0, categories: new Set(), impacts: [] };
+      freq[ent].count++;
+      freq[ent].categories.add(ev.category);
+      freq[ent].impacts.push(ev.impact);
+    }));
+    return Object.values(freq).sort((a, b) => b.count - a.count);
+  }, [events]);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    const W = canvas.width = canvas.offsetWidth * 2;
+    const H = canvas.height = canvas.offsetHeight * 2;
+    ctx.scale(1, 1);
+    const cx = W / 2, cy = H / 2;
+
+    // Initialize nodes in orbital positions
+    nodesRef.current = entityData.map((d, i) => {
+      const info = ENTITIES[d.name] || { color: "#94A3B8", short: d.name.substring(0, 4) };
+      const threatScore = d.impacts.filter(im => im === "critical").length / d.count;
+      const ring = d.count >= 4 ? 1 : d.count >= 2 ? 2 : 3;
+      const radius = ring === 1 ? Math.min(W, H) * 0.15 : ring === 2 ? Math.min(W, H) * 0.27 : Math.min(W, H) * 0.37;
+      const angleOffset = (i / entityData.length) * Math.PI * 2 + Math.random() * 0.5;
+      const speed = (0.0003 + Math.random() * 0.0004) * (ring === 1 ? 1.2 : ring === 2 ? 0.8 : 0.5);
+      return {
+        name: d.name, short: info.short, color: info.color, count: d.count,
+        threatScore, ring, radius, angle: angleOffset, speed,
+        x: cx + Math.cos(angleOffset) * radius,
+        y: cy + Math.sin(angleOffset) * radius,
+        size: 8 + d.count * 5,
+        pulsePhase: Math.random() * Math.PI * 2,
+      };
+    });
+
+    let t = 0;
+    const draw = () => {
+      t++;
+      ctx.clearRect(0, 0, W, H);
+
+      // Orbital rings
+      [0.15, 0.27, 0.37].forEach((r, i) => {
+        ctx.beginPath();
+        ctx.arc(cx, cy, Math.min(W, H) * r, 0, Math.PI * 2);
+        ctx.strokeStyle = `rgba(30,41,59,${0.5 - i * 0.12})`;
+        ctx.lineWidth = 1;
+        ctx.setLineDash([4, 8]);
+        ctx.stroke();
+        ctx.setLineDash([]);
+      });
+
+      // Center glow
+      const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, 60);
+      grad.addColorStop(0, "rgba(100,116,139,0.12)");
+      grad.addColorStop(1, "rgba(100,116,139,0)");
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.arc(cx, cy, 60, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Scan line
+      const scanAngle = (t * 0.008) % (Math.PI * 2);
+      const scanGrad = ctx.createConicGradient(scanAngle, cx, cy);
+      scanGrad.addColorStop(0, "rgba(74,165,212,0.06)");
+      scanGrad.addColorStop(0.08, "rgba(74,165,212,0)");
+      scanGrad.addColorStop(1, "rgba(74,165,212,0)");
+      ctx.fillStyle = scanGrad;
+      ctx.beginPath();
+      ctx.arc(cx, cy, Math.min(W, H) * 0.42, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Connection lines for co-occurring entities
+      const evMap = {};
+      events.forEach(ev => {
+        ev.entities.forEach(a => {
+          ev.entities.forEach(b => {
+            if (a < b) {
+              const k = a + "||" + b;
+              evMap[k] = (evMap[k] || 0) + 1;
+            }
+          });
+        });
+      });
+
+      const nodeMap = {};
+      nodesRef.current.forEach(n => nodeMap[n.name] = n);
+
+      Object.entries(evMap).forEach(([k, count]) => {
+        const [a, b] = k.split("||");
+        const na = nodeMap[a], nb = nodeMap[b];
+        if (na && nb) {
+          ctx.beginPath();
+          ctx.moveTo(na.x, na.y);
+          ctx.lineTo(nb.x, nb.y);
+          ctx.strokeStyle = `rgba(100,116,139,${0.06 + count * 0.04})`;
+          ctx.lineWidth = count;
+          ctx.stroke();
+        }
+      });
+
+      // Update and draw nodes
+      let foundHover = null;
+      nodesRef.current.forEach(node => {
+        node.angle += node.speed;
+        node.x = cx + Math.cos(node.angle) * node.radius;
+        node.y = cy + Math.sin(node.angle) * node.radius;
+
+        const pulse = 1 + Math.sin(t * 0.04 + node.pulsePhase) * 0.15 * node.threatScore;
+        const drawSize = node.size * pulse;
+
+        // Hover detection
+        const dx = mouseRef.current.x * 2 - node.x;
+        const dy = mouseRef.current.y * 2 - node.y;
+        const isHovered = Math.sqrt(dx * dx + dy * dy) < drawSize + 15;
+        if (isHovered) foundHover = node.name;
+
+        // Node glow
+        const glowGrad = ctx.createRadialGradient(node.x, node.y, 0, node.x, node.y, drawSize * 2.5);
+        glowGrad.addColorStop(0, node.color + "30");
+        glowGrad.addColorStop(1, node.color + "00");
+        ctx.fillStyle = glowGrad;
+        ctx.beginPath();
+        ctx.arc(node.x, node.y, drawSize * 2.5, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Threat ring for critical
+        if (node.threatScore > 0.5) {
+          ctx.beginPath();
+          ctx.arc(node.x, node.y, drawSize + 6 + Math.sin(t * 0.06) * 3, 0, Math.PI * 2);
+          ctx.strokeStyle = "#EF444460";
+          ctx.lineWidth = 1.5;
+          ctx.stroke();
+        }
+
+        // Node body
+        ctx.beginPath();
+        ctx.arc(node.x, node.y, drawSize, 0, Math.PI * 2);
+        ctx.fillStyle = isHovered ? node.color : node.color + "CC";
+        ctx.fill();
+        if (isHovered) {
+          ctx.strokeStyle = node.color;
+          ctx.lineWidth = 2;
+          ctx.stroke();
+        }
+
+        // Label
+        ctx.font = `${isHovered ? "bold " : ""}${isHovered ? 20 : 16}px JetBrains Mono, monospace`;
+        ctx.fillStyle = isHovered ? "#F1F5F9" : "#94A3B8";
+        ctx.textAlign = "center";
+        ctx.fillText(node.short, node.x, node.y - drawSize - 8);
+
+        if (isHovered) {
+          ctx.font = "13px JetBrains Mono, monospace";
+          ctx.fillStyle = "#64748B";
+          ctx.fillText(`${node.count} events`, node.x, node.y + drawSize + 18);
+        }
+      });
+
+      if (foundHover !== hoveredRef.current) {
+        hoveredRef.current = foundHover;
+        setHovered(foundHover);
+      }
+
+      animRef.current = requestAnimationFrame(draw);
+    };
+
+    draw();
+    return () => cancelAnimationFrame(animRef.current);
+  }, [entityData, events]);
+
+  const handleMouseMove = useCallback((e) => {
+    const rect = canvasRef.current.getBoundingClientRect();
+    mouseRef.current = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+  }, []);
+
+  const handleClick = useCallback(() => {
+    if (hoveredRef.current) onSelectEntity(hoveredRef.current);
+  }, [onSelectEntity]);
+
+  return (
+    <div style={{ position: "relative" }}>
+      <canvas
+        ref={canvasRef}
+        onMouseMove={handleMouseMove}
+        onClick={handleClick}
+        style={{
+          width: "100%", height: 420, cursor: hovered ? "pointer" : "crosshair",
+          borderRadius: 8, border: "1px solid #1A1D27",
+        }}
+      />
+      <div style={{
+        position: "absolute", top: 12, left: 16, fontSize: 10,
+        letterSpacing: 2, color: "#475569", textTransform: "uppercase",
+        pointerEvents: "none",
+      }}>
+        ‰ Threat Sphere — Entity Orbital Map
+      </div>
+      <div style={{
+        position: "absolute", bottom: 12, right: 16, fontSize: 10,
+        color: "#334155", pointerEvents: "none", textAlign: "right",
+      }}>
+        <span style={{ color: "#EF4444" }}></span> critical ring &nbsp;
+        inner = high freq &nbsp; outer = low freq
+      </div>
+    </div>
+  );
+}
+
+// 
+// ENTITY DOSSIER MODAL
+// 
+
+function EntityDossier({ entityName, events, threads, onClose }) {
+  if (!entityName) return null;
+  const info = ENTITIES[entityName] || { color: "#94A3B8", short: "???", type: "unknown" };
+  const entEvents = events.filter(ev => ev.entities.includes(entityName));
+  const entThreads = threads.filter(th => th.eventIds.some(eid => entEvents.find(e => e.id === eid)));
+  const connections = {};
+  entEvents.forEach(ev => ev.entities.forEach(ent => {
+    if (ent !== entityName) connections[ent] = (connections[ent] || 0) + 1;
+  }));
+  const connList = Object.entries(connections).sort((a, b) => b[1] - a[1]);
+  const critCount = entEvents.filter(e => e.impact === "critical").length;
+  const threatLevel = critCount >= 3 ? "SEVERE" : critCount >= 2 ? "ELEVATED" : critCount >= 1 ? "GUARDED" : "LOW";
+  const threatColors = { SEVERE: "#EF4444", ELEVATED: "#F59E0B", GUARDED: "#74A5D4", LOW: "#6EE7B7" };
+
+  return (
+    <div style={{
+      position: "fixed", inset: 0, zIndex: 1000,
+      background: "rgba(0,0,0,0.85)", backdropFilter: "blur(12px)",
+      display: "flex", justifyContent: "center", alignItems: "flex-start",
+      padding: "40px 20px", overflowY: "auto",
+    }} onClick={onClose}>
+      <div style={{
+        width: "100%", maxWidth: 680, background: "#0D1017",
+        border: `1px solid ${info.color}40`, borderRadius: 12,
+        overflow: "hidden",
+      }} onClick={e => e.stopPropagation()}>
+        {/* Header */}
+        <div style={{
+          padding: "28px 28px 20px",
+          background: `linear-gradient(135deg, ${info.color}10, transparent)`,
+          borderBottom: `1px solid ${info.color}20`,
+        }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+            <div>
+              <div style={{ fontSize: 10, letterSpacing: 2, color: "#64748B", textTransform: "uppercase", marginBottom: 4 }}>
+                Entity Dossier — {info.type}
+              </div>
+              <h2 style={{
+                fontFamily: "'Space Grotesk', sans-serif", fontSize: 24, fontWeight: 700,
+                color: info.color, margin: 0,
+              }}>{entityName}</h2>
+            </div>
+            <button onClick={onClose} style={{
+              background: "rgba(255,255,255,0.05)", border: "1px solid #334155",
+              color: "#94A3B8", width: 32, height: 32, borderRadius: 6,
+              cursor: "pointer", fontSize: 16, display: "flex", alignItems: "center", justifyContent: "center",
+            }}>✕</button>
+          </div>
+
+          {/* Threat Assessment Bar */}
+          <div style={{
+            marginTop: 16, display: "flex", gap: 16, flexWrap: "wrap",
+          }}>
+            <div style={{
+              padding: "6px 12px", borderRadius: 4,
+              background: threatColors[threatLevel] + "18",
+              border: `1px solid ${threatColors[threatLevel]}40`,
+            }}>
+              <div style={{ fontSize: 9, letterSpacing: 1.5, color: "#64748B", marginBottom: 2 }}>THREAT LEVEL</div>
+              <div style={{ fontSize: 14, fontWeight: 700, color: threatColors[threatLevel], fontFamily: "'Space Grotesk', sans-serif" }}>
+                {threatLevel}
+              </div>
+            </div>
+            <div style={{ padding: "6px 12px" }}>
+              <div style={{ fontSize: 9, letterSpacing: 1.5, color: "#64748B", marginBottom: 2 }}>EVENTS</div>
+              <div style={{ fontSize: 14, fontWeight: 700, color: "#F1F5F9", fontFamily: "'Space Grotesk', sans-serif" }}>{entEvents.length}</div>
+            </div>
+            <div style={{ padding: "6px 12px" }}>
+              <div style={{ fontSize: 9, letterSpacing: 1.5, color: "#64748B", marginBottom: 2 }}>CRITICAL</div>
+              <div style={{ fontSize: 14, fontWeight: 700, color: "#EF4444", fontFamily: "'Space Grotesk', sans-serif" }}>{critCount}</div>
+            </div>
+            <div style={{ padding: "6px 12px" }}>
+              <div style={{ fontSize: 9, letterSpacing: 1.5, color: "#64748B", marginBottom: 2 }}>CONNECTIONS</div>
+              <div style={{ fontSize: 14, fontWeight: 700, color: "#F1F5F9", fontFamily: "'Space Grotesk', sans-serif" }}>{connList.length}</div>
+            </div>
+          </div>
+        </div>
+
+        <div style={{ padding: "20px 28px 28px" }}>
+          {/* Connected Entities */}
+          {connList.length > 0 && (
+            <div style={{ marginBottom: 24 }}>
+              <div style={{ fontSize: 10, letterSpacing: 2, color: "#64748B", textTransform: "uppercase", marginBottom: 10 }}>
+                Connected Entities
+              </div>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                {connList.map(([ent, count]) => {
+                  const ei = ENTITIES[ent] || { color: "#94A3B8" };
+                  return (
+                    <span key={ent} style={{
+                      fontSize: 11, color: ei.color, background: ei.color + "15",
+                      padding: "4px 10px", borderRadius: 4, display: "flex", alignItems: "center", gap: 6,
+                    }}>
+                      <span style={{ width: 6, height: 6, borderRadius: "50%", background: ei.color }} />
+                      {ent}
+                      <span style={{ opacity: 0.5 }}>Ã—{count}</span>
+                    </span>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Active Threads */}
+          {entThreads.length > 0 && (
+            <div style={{ marginBottom: 24 }}>
+              <div style={{ fontSize: 10, letterSpacing: 2, color: "#64748B", textTransform: "uppercase", marginBottom: 10 }}>
+                Active Narrative Threads
+              </div>
+              {entThreads.map(th => (
+                <div key={th.id} style={{
+                  padding: "10px 14px", background: th.color + "08",
+                  borderLeft: `3px solid ${th.color}`, borderRadius: "0 6px 6px 0",
+                  marginBottom: 6,
+                }}>
+                  <div style={{ fontSize: 13, color: th.color, fontWeight: 600 }}>
+                    {th.icon} {th.label}
+                    <span style={{
+                      fontSize: 9, marginLeft: 8, padding: "2px 6px", borderRadius: 3,
+                      background: th.momentum === "escalating" ? "#EF444420" : th.momentum === "accelerating" ? "#F59E0B20" : "#6EE7B720",
+                      color: th.momentum === "escalating" ? "#EF4444" : th.momentum === "accelerating" ? "#F59E0B" : "#6EE7B7",
+                      textTransform: "uppercase", letterSpacing: 1,
+                    }}>{th.momentum}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Event Timeline */}
+          <div>
+            <div style={{ fontSize: 10, letterSpacing: 2, color: "#64748B", textTransform: "uppercase", marginBottom: 10 }}>
+              Event History
+            </div>
+            {entEvents.map((ev, i) => {
+              const imp = { critical: "#EF4444", high: "#F59E0B", moderate: "#6B7280" }[ev.impact];
+              return (
+                <div key={ev.id} style={{
+                  display: "flex", gap: 12, marginBottom: 12, position: "relative",
+                }}>
+                  <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: 16, flexShrink: 0 }}>
+                    <div style={{ width: 10, height: 10, borderRadius: "50%", background: imp, border: `2px solid ${imp}40`, flexShrink: 0 }} />
+                    {i < entEvents.length - 1 && <div style={{ width: 1, flex: 1, background: "#1E293B", marginTop: 4 }} />}
+                  </div>
+                  <div style={{ flex: 1, paddingBottom: 4 }}>
+                    <div style={{ fontSize: 10, color: "#475569", marginBottom: 2 }}>{ev.eventDate} · {ev.category}</div>
+                    <div style={{ fontSize: 13, color: "#E2E8F0", fontFamily: "'Crimson Pro', serif", lineHeight: 1.4 }}>{ev.title}</div>
+                    <div style={{ fontSize: 12, color: "#64748B", fontFamily: "'Crimson Pro', serif", marginTop: 4, lineHeight: 1.5 }}>{ev.description}</div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// 
+// MAIN COMPONENT
+// 
+
+const IMPACT_STYLES = {
+  critical: { border: "#EF4444", badge: "#991B1B", badgeBg: "rgba(239,68,68,0.15)", label: "CRITICAL" },
+  high: { border: "#F59E0B", badge: "#92400E", badgeBg: "rgba(245,158,11,0.15)", label: "HIGH" },
+  moderate: { border: "#6B7280", badge: "#4B5563", badgeBg: "rgba(107,114,128,0.12)", label: "MODERATE" },
+};
+const MOMENTUM_STYLES = {
+  escalating: { color: "#EF4444", bg: "#EF444418", icon: "²²" },
+  accelerating: { color: "#F59E0B", bg: "#F59E0B18", icon: "²" },
+  building: { color: "#6EE7B7", bg: "#6EE7B718", icon: "" },
+};
+
+function AITimeline() {
+  const [activeEntities, setActiveEntities] = useState(new Set());
+  const [activeCategories, setActiveCategories] = useState(new Set());
+  const [expandedId, setExpandedId] = useState(null);
+  const [viewMode, setViewMode] = useState("timeline");
+  const [dossierEntity, setDossierEntity] = useState(null);
+  const [showPrecog, setShowPrecog] = useState(true);
+  const [activeThread, setActiveThread] = useState(null);
+
+  const allEntityNames = useMemo(() => {
+    const s = new Set();
+    EVENTS.forEach(e => e.entities.forEach(ent => s.add(ent)));
+    return [...s].sort();
+  }, []);
+  const allCategoryNames = useMemo(() => [...new Set(EVENTS.map(e => e.category))].sort(), []);
+  const dates = useMemo(() => [...new Set(EVENTS.map(e => e.date))].sort(), []);
+
+  const filtered = useMemo(() => {
+    return EVENTS.filter(e => {
+      if (activeEntities.size > 0 && !e.entities.some(ent => activeEntities.has(ent))) return false;
+      if (activeCategories.size > 0 && !activeCategories.has(e.category)) return false;
+      if (activeThread) {
+        const thread = NARRATIVE_THREADS.find(t => t.id === activeThread);
+        if (thread && !thread.eventIds.includes(e.id)) return false;
+      }
+      return true;
+    });
+  }, [activeEntities, activeCategories, activeThread]);
+
+  const entityFreq = useMemo(() => {
+    const freq = {};
+    EVENTS.forEach(ev => ev.entities.forEach(ent => freq[ent] = (freq[ent] || 0) + 1));
+    return Object.entries(freq).sort((a, b) => b[1] - a[1]);
+  }, []);
+
+  const entityMatrix = useMemo(() => {
+    const pairs = {};
+    EVENTS.forEach(ev => {
+      for (let i = 0; i < ev.entities.length; i++)
+        for (let j = i + 1; j < ev.entities.length; j++) {
+          const key = [ev.entities[i], ev.entities[j]].sort().join("||");
+          pairs[key] = (pairs[key] || 0) + 1;
+        }
+    });
+    return Object.entries(pairs).map(([k, v]) => ({ entities: k.split("||"), count: v })).sort((a, b) => b.count - a.count);
+  }, []);
+
+  // -- ENHANCEMENT 5: SIGNAL MOMENTUM --
+  const signalMomentum = useMemo(() => {
+    const catByDay = {};
+    EVENTS.forEach(ev => {
+      if (!catByDay[ev.category]) catByDay[ev.category] = {};
+      catByDay[ev.category][ev.date] = (catByDay[ev.category][ev.date] || 0) + 1;
+    });
+    return Object.entries(catByDay).map(([cat, days]) => {
+      const vals = dates.map(d => days[d] || 0);
+      const recent = vals.slice(-1)[0] || 0;
+      const prev = vals.length > 1 ? vals.slice(0, -1).reduce((a, b) => a + b, 0) / (vals.length - 1) : 0;
+      const delta = prev > 0 ? ((recent - prev) / prev) * 100 : recent > 0 ? 100 : 0;
+      return { category: cat, values: vals, recent, delta };
+    }).sort((a, b) => b.delta - a.delta);
+  }, [dates]);
+
+  const toggleEntity = ent => setActiveEntities(prev => { const n = new Set(prev); n.has(ent) ? n.delete(ent) : n.add(ent); return n; });
+  const toggleCategory = cat => setActiveCategories(prev => { const n = new Set(prev); n.has(cat) ? n.delete(cat) : n.add(cat); return n; });
+  const formatDate = d => new Date(d + "T12:00:00").toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
+
+  const isThreadHighlighted = (evId) => {
+    if (!activeThread) return false;
+    const thread = NARRATIVE_THREADS.find(t => t.id === activeThread);
+    return thread && thread.eventIds.includes(evId);
+  };
+
+  return (
+    <div style={{ minHeight: "100vh", background: "#0A0C10", color: "#E2E8F0", fontFamily: "'JetBrains Mono', 'SF Mono', monospace" }}>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&family=Crimson+Pro:wght@400;500;600&display=swap');
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        ::-webkit-scrollbar { width: 5px; } ::-webkit-scrollbar-track { background: #0A0C10; } ::-webkit-scrollbar-thumb { background: #1E293B; border-radius: 3px; }
+        .chip { display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px; border-radius: 4px; font-size: 11px; cursor: pointer; transition: all 0.15s; border: 1px solid transparent; user-select: none; white-space: nowrap; }
+        .chip:hover { filter: brightness(1.3); } .chip.active { border-color: currentColor; filter: brightness(1.2); }
+        .event-card { border-left: 3px solid; padding: 14px 16px; background: rgba(255,255,255,0.02); border-radius: 0 6px 6px 0; cursor: pointer; transition: all 0.2s; position: relative; }
+        .event-card:hover { background: rgba(255,255,255,0.05); } .event-card.expanded { background: rgba(255,255,255,0.06); }
+        .event-card.thread-glow { box-shadow: inset 0 0 20px rgba(255,255,255,0.03); }
+        .mode-btn { padding: 6px 12px; border-radius: 4px; border: 1px solid #1E293B; background: transparent; color: #64748B; font-size: 10px; cursor: pointer; font-family: inherit; transition: all 0.15s; letter-spacing: 0.5px; }
+        .mode-btn.active { background: #1E293B; color: #E2E8F0; border-color: #334155; } .mode-btn:hover { border-color: #334155; color: #94A3B8; }
+        .clearBtn { font-size: 10px; color: #475569; cursor: pointer; background: none; border: 1px solid #1E293B; padding: 2px 8px; border-radius: 3px; font-family: inherit; }
+        .clearBtn:hover { color: #94A3B8; border-color: #334155; }
+        .precog-card { background: rgba(255,255,255,0.02); border: 1px solid #1A1D27; border-radius: 8px; padding: 16px; transition: all 0.2s; cursor: default; }
+        .precog-card:hover { background: rgba(255,255,255,0.04); border-color: #2D3348; }
+        .thread-pill { display: flex; align-items: center; gap: 8px; padding: 8px 14px; border-radius: 6px; cursor: pointer; transition: all 0.2s; border: 1px solid transparent; }
+        .thread-pill:hover { filter: brightness(1.2); }
+        .thread-pill.active { border-color: currentColor; }
+        .bar { height: 18px; border-radius: 2px; min-width: 2px; transition: width 0.3s; }
+        .momentum-spark { display: inline-flex; gap: 2px; align-items: flex-end; height: 16px; }
+        .momentum-spark > div { width: 4px; border-radius: 1px; transition: height 0.3s; }
+        @keyframes pulse-ring { 0% { transform: scale(1); opacity: 0.6; } 100% { transform: scale(1.6); opacity: 0; } }
+        .pulse-dot { position: relative; }
+        .pulse-dot::after { content: ''; position: absolute; inset: -4px; border-radius: 50%; border: 1px solid currentColor; animation: pulse-ring 2s ease-out infinite; }
+      `}</style>
+
+      {/* DOSSIER MODAL */}
+      {dossierEntity && (
+        <EntityDossier
+          entityName={dossierEntity}
+          events={EVENTS}
+          threads={NARRATIVE_THREADS}
+          onClose={() => setDossierEntity(null)}
+        />
+      )}
+
+      {/* HEADER */}
+      <div style={{ padding: "24px 28px 16px", borderBottom: "1px solid #131620", background: "linear-gradient(180deg, #0D1017, #0A0C10)" }}>
+        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
+          <div>
+            <div style={{ fontSize: 9, letterSpacing: 3, color: "#475569", textTransform: "uppercase", marginBottom: 4 }}>
+              Open Source Intelligence ˆ Horizon Scan
+            </div>
+            <h1 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 22, fontWeight: 700, color: "#F1F5F9", letterSpacing: -0.5 }}>
+              AI Intelligence Timeline
+            </h1>
+            <div style={{ fontSize: 11, color: "#475569", marginTop: 4 }}>
+              {dates.length} days · {EVENTS.length} events · {allEntityNames.length} entities · {NARRATIVE_THREADS.length} threads · {PRECOGNITION_SIGNALS.length} forward signals
+            </div>
+          </div>
+          <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
+            {["timeline", "sphere", "entity-map", "precog", "momentum"].map(m => (
+              <button key={m} className={`mode-btn ${viewMode === m ? "active" : ""}`} onClick={() => setViewMode(m)}>
+                {m === "timeline" ? "≡ Timeline" : m === "sphere" ? "◉ Threat Sphere" : m === "entity-map" ? "⊞ Entity Map" : m === "precog" ? "⚡ Precognition" : "↗ Momentum"}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <div style={{ display: "flex", minHeight: "calc(100vh - 100px)" }}>
+        {/* SIDEBAR */}
+        <div style={{
+          width: 240, flexShrink: 0, borderRight: "1px solid #131620",
+          padding: "16px 14px", overflowY: "auto", maxHeight: "calc(100vh - 100px)",
+          background: "rgba(13,16,23,0.8)",
+        }}>
+          {/* ENHANCEMENT 3: NARRATIVE THREADS */}
+          <div style={{ marginBottom: 20 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+              <span style={{ fontSize: 9, letterSpacing: 2, color: "#475569", textTransform: "uppercase" }}>Narrative Threads</span>
+              {activeThread && <button className="clearBtn" onClick={() => setActiveThread(null)}>Clear</button>}
+            </div>
+            {NARRATIVE_THREADS.map(th => {
+              const ms = MOMENTUM_STYLES[th.momentum];
+              return (
+                <div
+                  key={th.id}
+                  className={`thread-pill ${activeThread === th.id ? "active" : ""}`}
+                  style={{
+                    color: th.color,
+                    background: activeThread === th.id ? th.color + "15" : th.color + "06",
+                    marginBottom: 4,
+                  }}
+                  onClick={() => setActiveThread(activeThread === th.id ? null : th.id)}
+                >
+                  <span style={{ fontSize: 14 }}>{th.icon}</span>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 11, fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{th.label}</div>
+                  </div>
+                  <span style={{ fontSize: 9, color: ms.color, background: ms.bg, padding: "1px 5px", borderRadius: 3, letterSpacing: 0.5 }}>
+                    {ms.icon}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Categories */}
+          <div style={{ marginBottom: 18 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+              <span style={{ fontSize: 9, letterSpacing: 2, color: "#475569", textTransform: "uppercase" }}>Categories</span>
+              {activeCategories.size > 0 && <button className="clearBtn" onClick={() => setActiveCategories(new Set())}>Clear</button>}
+            </div>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 3 }}>
+              {allCategoryNames.map(cat => (
+                <div key={cat} className={`chip ${activeCategories.has(cat) ? "active" : ""}`}
+                  style={{ color: CATEGORIES[cat], background: CATEGORIES[cat] + "12", fontSize: 10, padding: "3px 8px" }}
+                  onClick={() => toggleCategory(cat)}>
+                  <span style={{ width: 5, height: 5, borderRadius: "50%", background: CATEGORIES[cat] }} />{cat}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Entities */}
+          <div>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+              <span style={{ fontSize: 9, letterSpacing: 2, color: "#475569", textTransform: "uppercase" }}>Entities ({allEntityNames.length})</span>
+              {activeEntities.size > 0 && <button className="clearBtn" onClick={() => setActiveEntities(new Set())}>Clear</button>}
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 1 }}>
+              {entityFreq.map(([ent, count]) => {
+                const info = ENTITIES[ent] || { color: "#94A3B8" };
+                const isActive = activeEntities.has(ent);
+                return (
+                  <div key={ent} style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                    <div className={`chip ${isActive ? "active" : ""}`}
+                      style={{ color: info.color, background: isActive ? info.color + "20" : info.color + "06", flex: 1, justifyContent: "space-between", fontSize: 10, padding: "3px 8px" }}
+                      onClick={() => toggleEntity(ent)}>
+                      <span style={{ display: "flex", alignItems: "center", gap: 5, overflow: "hidden" }}>
+                        <span style={{ width: 5, height: 5, borderRadius: "50%", background: info.color, flexShrink: 0 }} />
+                        <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{ent}</span>
+                      </span>
+                      <span style={{ opacity: 0.5, flexShrink: 0 }}>{count}</span>
+                    </div>
+                    <button style={{
+                      background: "none", border: "1px solid #1E293B", color: "#475569",
+                      width: 22, height: 22, borderRadius: 4, cursor: "pointer",
+                      fontSize: 10, display: "flex", alignItems: "center", justifyContent: "center",
+                      fontFamily: "inherit", flexShrink: 0,
+                    }} onClick={() => setDossierEntity(ent)} title="Open Dossier">⊕</button>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+
+        {/* MAIN CONTENT */}
+        <div style={{ flex: 1, overflowY: "auto", maxHeight: "calc(100vh - 100px)", padding: "16px 20px" }}>
+
+          {/*  TIMELINE VIEW  */}
+          {viewMode === "timeline" && (
+            <div>
+              {/* Precog Quick Strip */}
+              {showPrecog && (
+                <div style={{ marginBottom: 20 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                    <span style={{ fontSize: 9, letterSpacing: 2, color: "#475569", textTransform: "uppercase" }}>‡ Forward Signals</span>
+                    <button className="clearBtn" onClick={() => setShowPrecog(false)}>Hide</button>
+                  </div>
+                  <div style={{ display: "flex", gap: 8, overflowX: "auto", paddingBottom: 4 }}>
+                    {PRECOGNITION_SIGNALS.filter(s => s.hoursOut <= 168).slice(0, 4).map(sig => {
+                      const imp = IMPACT_STYLES[sig.impact];
+                      return (
+                        <div key={sig.id} style={{
+                          minWidth: 200, padding: "10px 14px", borderRadius: 6,
+                          background: imp.border + "08", border: `1px solid ${imp.border}25`,
+                          flexShrink: 0,
+                        }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
+                            <span className="pulse-dot" style={{ width: 6, height: 6, borderRadius: "50%", background: imp.border, color: imp.border, display: "inline-block" }} />
+                            <span style={{ fontSize: 10, color: imp.border, fontWeight: 600 }}>{sig.eta}</span>
+                            <span style={{ fontSize: 9, color: "#475569", marginLeft: "auto" }}>{Math.round(sig.probability * 100)}%</span>
+                          </div>
+                          <div style={{ fontSize: 12, color: "#E2E8F0", fontFamily: "'Crimson Pro', serif", lineHeight: 1.3 }}>{sig.title}</div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Active thread summary */}
+              {activeThread && (() => {
+                const th = NARRATIVE_THREADS.find(t => t.id === activeThread);
+                if (!th) return null;
+                return (
+                  <div style={{
+                    marginBottom: 20, padding: "14px 18px", borderRadius: 8,
+                    background: th.color + "08", borderLeft: `4px solid ${th.color}`,
+                  }}>
+                    <div style={{ fontSize: 14, fontWeight: 600, color: th.color, marginBottom: 4 }}>
+                      {th.icon} {th.label}
+                    </div>
+                    <div style={{ fontSize: 13, color: "#94A3B8", fontFamily: "'Crimson Pro', serif", lineHeight: 1.5 }}>
+                      {th.summary}
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {/* Stats */}
+              <div style={{
+                display: "flex", gap: 20, marginBottom: 20, padding: "10px 14px",
+                background: "rgba(255,255,255,0.015)", borderRadius: 6, border: "1px solid #131620", flexWrap: "wrap",
+              }}>
+                <div>
+                  <div style={{ fontSize: 9, color: "#475569", textTransform: "uppercase", letterSpacing: 1 }}>Showing</div>
+                  <div style={{ fontSize: 16, fontWeight: 600, color: "#F1F5F9", fontFamily: "'Space Grotesk', sans-serif" }}>
+                    {filtered.length}<span style={{ fontSize: 11, color: "#475569" }}>/{EVENTS.length}</span>
+                  </div>
+                </div>
+                <div>
+                  <div style={{ fontSize: 9, color: "#475569", textTransform: "uppercase", letterSpacing: 1 }}>Critical</div>
+                  <div style={{ fontSize: 16, fontWeight: 600, color: "#EF4444", fontFamily: "'Space Grotesk', sans-serif" }}>
+                    {filtered.filter(e => e.impact === "critical").length}
+                  </div>
+                </div>
+                <div>
+                  <div style={{ fontSize: 9, color: "#475569", textTransform: "uppercase", letterSpacing: 1 }}>Range</div>
+                  <div style={{ fontSize: 12, color: "#94A3B8", marginTop: 2 }}>
+                    {dates.length > 0 ? `${formatDate(dates[0])} →’ ${formatDate(dates[dates.length - 1])}` : "—"}
+                  </div>
+                </div>
+              </div>
+
+              {/* Day groups */}
+              {dates.map(date => {
+                const dayEvents = filtered.filter(e => e.date === date);
+                if (dayEvents.length === 0) return null;
+                return (
+                  <div key={date} style={{ marginBottom: 28 }}>
+                    <div style={{
+                      display: "flex", alignItems: "center", gap: 12, marginBottom: 12,
+                      position: "sticky", top: 0, zIndex: 10, background: "#0A0C10", paddingBottom: 6, paddingTop: 2,
+                    }}>
+                      <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 14, fontWeight: 600, color: "#F1F5F9" }}>
+                        {formatDate(date)}
+                      </div>
+                      <div style={{ flex: 1, height: 1, background: "#131620" }} />
+                      <div style={{ fontSize: 9, color: "#475569", letterSpacing: 1, background: "#0D1017", padding: "2px 8px", borderRadius: 3 }}>
+                        {dayEvents.length} event{dayEvents.length !== 1 ? "s" : ""}
+                      </div>
+                    </div>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 6, paddingLeft: 6 }}>
+                      {dayEvents.map(ev => {
+                        const imp = IMPACT_STYLES[ev.impact];
+                        const isExpanded = expandedId === ev.id;
+                        const isGlow = isThreadHighlighted(ev.id);
+                        return (
+                          <div key={ev.id}
+                            className={`event-card ${isExpanded ? "expanded" : ""} ${isGlow ? "thread-glow" : ""}`}
+                            style={{
+                              borderLeftColor: isGlow && activeThread
+                                ? NARRATIVE_THREADS.find(t => t.id === activeThread)?.color || imp.border
+                                : imp.border,
+                            }}
+                            onClick={() => setExpandedId(isExpanded ? null : ev.id)}>
+                            <div style={{ display: "flex", alignItems: "flex-start", gap: 10, justifyContent: "space-between" }}>
+                              <div style={{ flex: 1 }}>
+                                <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 5, flexWrap: "wrap" }}>
+                                  <span style={{ fontSize: 8, fontWeight: 600, letterSpacing: 1, color: imp.badge, background: imp.badgeBg, padding: "2px 5px", borderRadius: 3, textTransform: "uppercase" }}>{imp.label}</span>
+                                  <span style={{ fontSize: 9, color: CATEGORIES[ev.category], background: CATEGORIES[ev.category] + "10", padding: "2px 5px", borderRadius: 3 }}>{ev.category}</span>
+                                  <span style={{ fontSize: 9, color: "#334155" }}>{ev.eventDate}</span>
+                                  {isGlow && <span style={{ fontSize: 8, color: NARRATIVE_THREADS.find(t => t.id === activeThread)?.color, letterSpacing: 1 }}>ˆ THREAD</span>}
+                                </div>
+                                <div style={{ fontFamily: "'Crimson Pro', serif", fontSize: 14, fontWeight: 500, color: "#E2E8F0", lineHeight: 1.35 }}>{ev.title}</div>
+                              </div>
+                              <div style={{ display: "flex", gap: 2, flexShrink: 0, marginTop: 4 }}>
+                                {ev.entities.map(ent => (
+                                  <span key={ent} style={{ width: 7, height: 7, borderRadius: "50%", background: (ENTITIES[ent] || {}).color || "#94A3B8" }} title={ent} />
+                                ))}
+                              </div>
+                            </div>
+                            {isExpanded && (
+                              <div style={{ marginTop: 10, paddingTop: 10, borderTop: "1px solid #1E293B" }}>
+                                <p style={{ fontFamily: "'Crimson Pro', serif", fontSize: 13, lineHeight: 1.6, color: "#94A3B8", marginBottom: 10 }}>{ev.description}</p>
+                                <div style={{ display: "flex", flexWrap: "wrap", gap: 3 }}>
+                                  {ev.entities.map(ent => {
+                                    const info = ENTITIES[ent] || { color: "#94A3B8" };
+                                    return (
+                                      <span key={ent} style={{ fontSize: 10, color: info.color, background: info.color + "12", padding: "2px 7px", borderRadius: 3, cursor: "pointer" }}
+                                        onClick={e => { e.stopPropagation(); setDossierEntity(ent); }}>
+                                        {ent}
+                                      </span>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })}
+              {filtered.length === 0 && <div style={{ textAlign: "center", padding: 60, color: "#334155" }}>No events match filters.</div>}
+            </div>
+          )}
+
+          {/*  THREAT SPHERE VIEW  */}
+          {viewMode === "sphere" && (
+            <div>
+              <ThreatSphere events={EVENTS} onSelectEntity={setDossierEntity} />
+              <div style={{ marginTop: 16, fontSize: 11, color: "#475569", textAlign: "center" }}>
+                Click any entity node to open its dossier. Inner ring = highest frequency. Red halos = critical threat entities.
+              </div>
+            </div>
+          )}
+
+          {/*  PRECOGNITION VIEW  */}
+          {viewMode === "precog" && (
+            <div>
+              <div style={{ fontSize: 9, letterSpacing: 2, color: "#475569", textTransform: "uppercase", marginBottom: 16 }}>
+                ‡ Precognition Signals — Forward-Looking Intelligence
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                {PRECOGNITION_SIGNALS.map(sig => {
+                  const imp = IMPACT_STYLES[sig.impact];
+                  const thread = NARRATIVE_THREADS.find(t => t.id === sig.threadId);
+                  return (
+                    <div key={sig.id} className="precog-card" style={{ borderColor: imp.border + "30" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 10 }}>
+                        <div>
+                          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
+                            <span className="pulse-dot" style={{ width: 8, height: 8, borderRadius: "50%", background: imp.border, color: imp.border, display: "inline-block" }} />
+                            <span style={{ fontSize: 9, fontWeight: 600, letterSpacing: 1, color: imp.badge, background: imp.badgeBg, padding: "2px 6px", borderRadius: 3, textTransform: "uppercase" }}>{imp.label}</span>
+                            {thread && (
+                              <span style={{ fontSize: 9, color: thread.color, background: thread.color + "12", padding: "2px 6px", borderRadius: 3 }}>
+                                {thread.icon} {thread.label}
+                              </span>
+                            )}
+                          </div>
+                          <h3 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 16, fontWeight: 600, color: "#F1F5F9", margin: 0 }}>{sig.title}</h3>
+                        </div>
+                        <div style={{ textAlign: "right", flexShrink: 0 }}>
+                          <div style={{ fontSize: 9, color: "#475569", letterSpacing: 1 }}>ETA</div>
+                          <div style={{ fontSize: 14, fontWeight: 600, color: sig.hoursOut <= 48 ? "#EF4444" : "#F59E0B", fontFamily: "'Space Grotesk', sans-serif" }}>{sig.eta}</div>
+                        </div>
+                      </div>
+
+                      <p style={{ fontFamily: "'Crimson Pro', serif", fontSize: 14, lineHeight: 1.5, color: "#94A3B8", marginBottom: 12 }}>{sig.description}</p>
+
+                      {/* Probability bar */}
+                      <div style={{ marginBottom: 12 }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
+                          <span style={{ fontSize: 9, color: "#475569", letterSpacing: 1 }}>PROBABILITY</span>
+                          <span style={{ fontSize: 11, color: "#E2E8F0", fontWeight: 600 }}>{Math.round(sig.probability * 100)}%</span>
+                        </div>
+                        <div style={{ height: 6, background: "#131620", borderRadius: 3, overflow: "hidden" }}>
+                          <div style={{
+                            height: "100%", borderRadius: 3,
+                            width: `${sig.probability * 100}%`,
+                            background: `linear-gradient(90deg, ${imp.border}60, ${imp.border})`,
+                          }} />
+                        </div>
+                      </div>
+
+                      {/* Cascade Risk */}
+                      <div style={{
+                        padding: "10px 14px", borderRadius: 6,
+                        background: "rgba(239,68,68,0.04)", border: "1px solid rgba(239,68,68,0.1)",
+                      }}>
+                        <div style={{ fontSize: 9, letterSpacing: 1.5, color: "#EF4444", marginBottom: 4 }}>CASCADE RISK</div>
+                        <div style={{ fontSize: 12, color: "#CBD5E1", fontFamily: "'Crimson Pro', serif", lineHeight: 1.4 }}>{sig.cascadeRisk}</div>
+                      </div>
+
+                      {/* Trigger entities */}
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginTop: 10 }}>
+                        {sig.triggerEntities.map(ent => {
+                          const info = ENTITIES[ent] || { color: "#94A3B8" };
+                          return (
+                            <span key={ent} style={{ fontSize: 10, color: info.color, background: info.color + "12", padding: "2px 8px", borderRadius: 3, cursor: "pointer" }}
+                              onClick={() => setDossierEntity(ent)}>
+                              {ent}
+                            </span>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/*  ENTITY MAP VIEW  */}
+          {viewMode === "entity-map" && (
+            <div>
+              <div style={{ fontSize: 9, letterSpacing: 2, color: "#475569", textTransform: "uppercase", marginBottom: 16 }}>
+                ⊞ Entity Frequency & Co-Occurrence
+              </div>
+              <div style={{ marginBottom: 24 }}>
+                <div style={{ fontSize: 11, color: "#94A3B8", marginBottom: 8, fontWeight: 500 }}>Event Frequency</div>
+                {entityFreq.map(([ent, count]) => {
+                  const info = ENTITIES[ent] || { color: "#94A3B8" };
+                  const max = entityFreq[0][1];
+                  return (
+                    <div key={ent} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4, cursor: "pointer" }}
+                      onClick={() => setDossierEntity(ent)}>
+                      <span style={{ fontSize: 10, color: info.color, width: 140, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", textAlign: "right" }}>{ent}</span>
+                      <div style={{ flex: 1, background: "#0D1017", borderRadius: 2, height: 16 }}>
+                        <div className="bar" style={{ width: `${(count / max) * 100}%`, background: `linear-gradient(90deg, ${info.color}35, ${info.color}85)`, height: 16 }} />
+                      </div>
+                      <span style={{ fontSize: 10, color: "#475569", width: 18, textAlign: "right" }}>{count}</span>
+                    </div>
+                  );
+                })}
+              </div>
+              <div style={{ marginBottom: 24 }}>
+                <div style={{ fontSize: 11, color: "#94A3B8", marginBottom: 8, fontWeight: 500 }}>Co-Occurrence</div>
+                {entityMatrix.map(({ entities: [a, b], count }, i) => {
+                  const infoA = ENTITIES[a] || { color: "#94A3B8" };
+                  const infoB = ENTITIES[b] || { color: "#94A3B8" };
+                  return (
+                    <div key={i} style={{ padding: "5px 10px", borderRadius: 4, display: "flex", alignItems: "center", gap: 6, background: "rgba(255,255,255,0.02)", marginBottom: 3 }}>
+                      <span style={{ width: 6, height: 6, borderRadius: "50%", background: infoA.color }} />
+                      <span style={{ fontSize: 10, color: infoA.color }}>{a}</span>
+                      <span style={{ fontSize: 9, color: "#1E293B" }}>Ã—</span>
+                      <span style={{ width: 6, height: 6, borderRadius: "50%", background: infoB.color }} />
+                      <span style={{ fontSize: 10, color: infoB.color }}>{b}</span>
+                      <span style={{ marginLeft: "auto", fontSize: 10, color: "#475569" }}>{count}Ã—</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/*  MOMENTUM VIEW  */}
+          {viewMode === "momentum" && (
+            <div>
+              <div style={{ fontSize: 9, letterSpacing: 2, color: "#475569", textTransform: "uppercase", marginBottom: 16 }}>
+                →— Signal Momentum — Category Velocity Across Briefing Days
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                {signalMomentum.map(({ category, values, recent, delta }) => {
+                  const catColor = CATEGORIES[category] || "#94A3B8";
+                  const maxVal = Math.max(...values, 1);
+                  const isRising = delta > 0;
+                  return (
+                    <div key={category} style={{
+                      padding: "14px 18px", borderRadius: 8, background: "rgba(255,255,255,0.02)",
+                      border: "1px solid #131620",
+                    }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                          <span style={{ width: 8, height: 8, borderRadius: "50%", background: catColor }} />
+                          <span style={{ fontSize: 13, color: catColor, fontWeight: 500 }}>{category}</span>
+                        </div>
+                        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                          <span style={{
+                            fontSize: 11, fontWeight: 600,
+                            color: delta > 30 ? "#EF4444" : delta > 0 ? "#F59E0B" : delta === 0 ? "#64748B" : "#6EE7B7",
+                          }}>
+                            {isRising ? "²" : delta === 0 ? "—" : "¼"} {Math.abs(Math.round(delta))}%
+                          </span>
+                          <span style={{ fontSize: 10, color: "#475569" }}>{recent} latest</span>
+                        </div>
+                      </div>
+
+                      {/* Sparkline bars */}
+                      <div style={{ display: "flex", alignItems: "flex-end", gap: 4, height: 40 }}>
+                        {values.map((v, i) => (
+                          <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 2 }}>
+                            <div style={{
+                              width: "100%", maxWidth: 60,
+                              height: Math.max(4, (v / maxVal) * 36),
+                              background: i === values.length - 1
+                                ? `linear-gradient(180deg, ${catColor}, ${catColor}80)`
+                                : `${catColor}30`,
+                              borderRadius: 2,
+                              transition: "height 0.4s",
+                            }} />
+                          </div>
+                        ))}
+                      </div>
+                      <div style={{ display: "flex", gap: 4, marginTop: 4 }}>
+                        {dates.map((d, i) => (
+                          <div key={i} style={{ flex: 1, textAlign: "center", fontSize: 9, color: "#334155", maxWidth: 60 }}>
+                            {new Date(d + "T12:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Narrative thread momentum */}
+              <div style={{ marginTop: 24 }}>
+                <div style={{ fontSize: 9, letterSpacing: 2, color: "#475569", textTransform: "uppercase", marginBottom: 12 }}>
+                  Narrative Thread Velocity
+                </div>
+                {NARRATIVE_THREADS.map(th => {
+                  const ms = MOMENTUM_STYLES[th.momentum];
+                  const evCount = th.eventIds.length;
+                  const days = new Set(th.eventIds.map(eid => EVENTS.find(e => e.id === eid)?.date).filter(Boolean));
+                  return (
+                    <div key={th.id} style={{
+                      padding: "12px 16px", borderRadius: 8, marginBottom: 8,
+                      background: th.color + "06", borderLeft: `3px solid ${th.color}`,
+                      cursor: "pointer",
+                    }} onClick={() => { setActiveThread(th.id); setViewMode("timeline"); }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                          <span style={{ fontSize: 14 }}>{th.icon}</span>
+                          <span style={{ fontSize: 13, color: th.color, fontWeight: 600 }}>{th.label}</span>
+                        </div>
+                        <span style={{
+                          fontSize: 10, fontWeight: 600, color: ms.color, background: ms.bg,
+                          padding: "3px 8px", borderRadius: 4, letterSpacing: 0.5, textTransform: "uppercase",
+                        }}>
+                          {ms.icon} {th.momentum}
+                        </span>
+                      </div>
+                      <div style={{ fontSize: 12, color: "#94A3B8", fontFamily: "'Crimson Pro', serif", lineHeight: 1.4, marginBottom: 6 }}>{th.summary}</div>
+                      <div style={{ fontSize: 10, color: "#475569" }}>
+                        {evCount} events across {days.size} day{days.size !== 1 ? "s" : ""}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
+ReactDOM.createRoot(document.getElementById('root')).render(<AITimeline />);
+
+</script>
+</body>
+</html>
