@@ -2,7 +2,7 @@
 
 **A standing record of the 2026 AI landscape — daily briefings, weekly momentum scans, and deep landscape analyses.**
 
-*Human-Directed. AI-Enabled. Commercially Tested.* — [Barry Hurd Intelligence Lab (BHIL)](https://github.com/camalus)
+*Human-Directed. AI-Enabled. Commercially Tested.* — [Barry Hurd Intelligence Lab (BHIL)](https://github.com/PolymathWizard)
 
 ---
 
@@ -14,7 +14,7 @@ New reports are appended on a weekly cadence. See [`CONTRIBUTING.md`](CONTRIBUTI
 
 The hero of this archive is an interactive intelligence timeline rendered from the daily and weekly record:
 
-- **[Open the live timeline →](https://camalus.github.io/ai-intelligence-archive/)** *(GitHub Pages)*
+- **[Open the live timeline →](https://polymathwizard.github.io/AI-Intelligence-Archive/)** *(GitHub Pages)*
 - Source: [`index.html`](index.html) — a standalone, zero-build page. Clone and open it directly in any browser.
 - Component source: [`timeline/AITimeline.jsx`](timeline/AITimeline.jsx)
 
@@ -68,7 +68,7 @@ The prompt systems and engines used to *produce* these reports are maintained pr
 ## Repository layout
 
 ```
-ai-intelligence-archive/
+AI-Intelligence-Archive/
 ├── index.html                 # Interactive timeline (the hero) — open directly
 ├── reports/
 │   ├── daily/                 # Daily horizon scans  (YYYY-MM-DD-daily-briefing.md)
